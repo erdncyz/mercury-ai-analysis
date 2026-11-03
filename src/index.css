@@ -1,0 +1,217 @@
+@import "tailwindcss";
+
+@theme {
+  --color-ink: #030303;
+  --color-ink-deep: #000000;
+  --color-ink-elevated: #0a0a0c;
+  --color-ink-panel: #101014;
+  --color-ink-line: #1c1c22;
+  --color-mercury: #ededef;
+  --color-mercury-dim: #a1a1aa;
+  --color-mercury-mute: #71717a;
+  --color-cyan: #5eead4;
+  --color-cyan-dim: #2dd4bf;
+  --color-gold: #e8c37a;
+  --color-gold-dim: #c9a35a;
+  --font-display: "Instrument Serif", Georgia, serif;
+  --font-sans: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, monospace;
+  --ease-cinema: cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@layer base {
+  *,
+  *::before,
+  *::after {
+    box-sizing: border-box;
+  }
+
+  html {
+    color-scheme: dark;
+  }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    font-family: var(--font-sans);
+    background: var(--color-ink);
+    color: var(--color-mercury);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  #root {
+    min-height: 100vh;
+  }
+
+  a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  button,
+  input,
+  select {
+    font: inherit;
+  }
+
+  button,
+  [role="tab"],
+  a {
+    cursor: pointer;
+  }
+
+  :focus-visible {
+    outline: 2px solid color-mix(in oklab, var(--color-cyan) 80%, white);
+    outline-offset: 3px;
+  }
+
+  ::selection {
+    background: rgba(94, 234, 212, 0.28);
+    color: white;
+  }
+}
+
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+  }
+
+  .font-mono {
+    font-family: var(--font-mono);
+  }
+
+  .mercury-shimmer {
+    background: linear-gradient(
+      110deg,
+      transparent 20%,
+      rgba(237, 237, 239, 0.1) 40%,
+      rgba(94, 234, 212, 0.16) 50%,
+      rgba(237, 237, 239, 0.1) 60%,
+      transparent 80%
+    );
+    background-size: 200% 100%;
+    animation: mercury-flow 1.2s ease-out;
+  }
+
+  .rank-metal {
+    background: linear-gradient(135deg, #f4f4f5 0%, #a1a1aa 45%, #5eead4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .rank-gold {
+    background: linear-gradient(135deg, #fff4d4 0%, #e8c37a 50%, #5eead4 100%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  .panel {
+    background: color-mix(in oklab, var(--color-ink-panel) 82%, transparent);
+    border: 1px solid rgba(255, 255, 255, 0.07);
+    backdrop-filter: blur(18px);
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.04),
+      0 18px 40px -28px rgba(0, 0, 0, 0.85);
+  }
+
+  .panel-glow {
+    box-shadow:
+      inset 0 1px 0 rgba(255, 255, 255, 0.06),
+      0 0 0 1px rgba(94, 234, 212, 0.14),
+      0 24px 50px -30px rgba(94, 234, 212, 0.22);
+  }
+
+  .glass-header {
+    background: color-mix(in oklab, var(--color-ink) 78%, transparent);
+    backdrop-filter: blur(20px) saturate(1.15);
+  }
+}
+
+@keyframes mercury-flow {
+  from {
+    background-position: 100% 0;
+  }
+  to {
+    background-position: -40% 0;
+  }
+}
+
+@keyframes blob-drift-a {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(6%, 8%, 0) scale(1.08);
+  }
+}
+
+@keyframes blob-drift-b {
+  0%,
+  100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-8%, 5%, 0) scale(1.12);
+  }
+}
+
+@keyframes pulse-live {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+}
+
+@keyframes mercury-wave {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-6%);
+  }
+}
+
+@keyframes skeleton-sweep {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -40% 0;
+  }
+}
+
+.skeleton {
+  background: linear-gradient(
+    110deg,
+    rgba(16, 16, 20, 0.95) 20%,
+    rgba(94, 234, 212, 0.07) 45%,
+    rgba(16, 16, 20, 0.95) 70%
+  );
+  background-size: 220% 100%;
+  animation: skeleton-sweep 1.4s ease-in-out infinite;
+}
+
+.live-dot {
+  animation: pulse-live 1.8s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mercury-shimmer,
+  .live-dot,
+  .skeleton,
+  .blob-a,
+  .blob-b,
+  .mercury-wave {
+    animation: none !important;
+  }
+}
