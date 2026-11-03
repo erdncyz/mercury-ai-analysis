@@ -1,0 +1,68 @@
+name: Version bump
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: mercury-ai-analysis-version
+  cancel-in-progress: false
+
+jobs:
+  bump:
+    if: "!startsWith(github.event.head_commit.message, 'chore(release):')"
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Bump version from commit messages
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          HEAD_COMMIT_MSG: ${{ github.event.head_commit.message }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          messages=$(jq -r '.commits[]?.message // empty' "$GITHUB_EVENT_PATH")
+          if [[ -z "$messages" ]]; then
+            messages="$HEAD_COMMIT_MSG"
+          fi
+
+          bump="patch"
+          if grep -Eq 'BREAKING CHANGE|^[a-zA-Z]+(\([^)]+\))?!:' <<< "$messages"; then
+            bump="major"
+          elif grep -Eq '^feat(\([^)]+\))?:' <<< "$messages"; then
+            bump="minor"
+          fi
+
+          npm version "$bump" --no-git-tag-version
+          version=$(node -p "require('./package.json').version")
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          branch="chore/release-v${version}"
+
+          if git ls-remote --exit-code origin "refs/heads/$branch" >/dev/null 2>&1; then
+            echo "Branch $branch already exists."
+            exit 0
+          fi
+
+          git checkout -b "$branch"
+          git add package.json package-lock.json
+          git commit -m "chore(release): v${version}"
+          git push origin "$branch"
+          gh pr create --base main --head "$branch" \
+            --title "chore(release): v${version}" \
+            --body "Automated version bump. Merging this publishes the installable package."
+          gh pr merge "$branch" --squash --auto

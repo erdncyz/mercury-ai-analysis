@@ -1,0 +1,53 @@
+name: Release Mercury Ai Analysis
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+
+concurrency:
+  group: mercury-ai-analysis-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: github.event_name == 'workflow_dispatch' || startsWith(github.event.head_commit.message, 'chore(release):')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install, package, and publish
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          npm ci
+          bash scripts/package-release.sh
+          version="$(node -p "require('./package.json').version")"
+          tag="v${version}"
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" \
+              mercury-ai-analysis.tar.gz \
+              mercury-ai-analysis.tar.gz.sha256 \
+              scripts/install.sh \
+              --clobber
+          else
+            gh release create "$tag" \
+              mercury-ai-analysis.tar.gz \
+              mercury-ai-analysis.tar.gz.sha256 \
+              scripts/install.sh \
+              --title "Mercury Ai Analysis ${tag}" \
+              --notes "Checksum-verified package. Install or update with the commands in the README."
+          fi

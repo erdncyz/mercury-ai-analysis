@@ -12,6 +12,31 @@ Mercury Ai Analysis is a workspace for choosing and tracking frontier models. It
 
 The interface is in English and Turkish. Model scores, prices, and latency come from [Artificial Analysis](https://artificialanalysis.ai/) and stay credited in the footer.
 
+## Install
+
+You do not need to clone the repository. The installer downloads a checksum-verified GitHub Release and keeps it under `~/.mercury-ai-analysis`.
+
+```bash
+curl -fsSL https://github.com/erdncyz/mercury-ai-analysis/releases/latest/download/install.sh | bash
+mercury-ai-analysis up
+```
+
+Node.js is the only requirement. The app listens on http://127.0.0.1:4173.
+
+Put API keys in `~/.mercury-ai-analysis/config/.env`. That file is kept when you update:
+
+```bash
+mercury-ai-analysis update
+```
+
+To install or roll back to an exact version:
+
+```bash
+curl -fsSL https://github.com/erdncyz/mercury-ai-analysis/releases/latest/download/install.sh | bash -s -- --version v1.0.0
+```
+
+A push to `main` bumps the package version from the commit message (`feat:` minor, breaking change major, everything else patch) and publishes the next release. The release commit itself is `chore(release): vX.Y.Z`.
+
 ## Stack
 
 - Vite, React, and TypeScript

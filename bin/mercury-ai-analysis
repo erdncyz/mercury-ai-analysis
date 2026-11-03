@@ -1,0 +1,113 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+RELEASE_ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+INSTALL_ROOT="${MERCURY_AI_ANALYSIS_HOME:-$HOME/.mercury-ai-analysis}"
+PID_FILE="${INSTALL_ROOT}/mercury-ai-analysis.pid"
+LOG_FILE="${INSTALL_ROOT}/mercury-ai-analysis.log"
+ENV_FILE="${INSTALL_ROOT}/config/.env"
+PORT="${PORT:-4173}"
+
+usage() {
+  cat <<'EOF'
+Mercury Ai Analysis
+
+Usage:
+  mercury-ai-analysis up        Start the local app
+  mercury-ai-analysis down      Stop the local app
+  mercury-ai-analysis update    Install the latest verified release
+  mercury-ai-analysis version   Print the installed release
+  mercury-ai-analysis status    Show whether the app is running
+EOF
+}
+
+version() {
+  if [[ -f "${RELEASE_ROOT}/.release-version" ]]; then
+    tr -d '[:space:]' < "${RELEASE_ROOT}/.release-version"
+    echo
+  else
+    node -p "require('${RELEASE_ROOT}/package.json').version"
+  fi
+}
+
+running_pid() {
+  if [[ -f "$PID_FILE" ]]; then
+    local pid
+    pid="$(tr -d '[:space:]' < "$PID_FILE")"
+    if [[ -n "$pid" ]] && kill -0 "$pid" 2>/dev/null; then
+      echo "$pid"
+      return 0
+    fi
+  fi
+  return 1
+}
+
+down() {
+  local pid
+  if pid="$(running_pid)"; then
+    kill "$pid" 2>/dev/null || true
+    rm -f "$PID_FILE"
+    echo "Stopped Mercury Ai Analysis (${pid})."
+  else
+    rm -f "$PID_FILE"
+    echo "Mercury Ai Analysis is not running."
+  fi
+}
+
+up() {
+  local server="${RELEASE_ROOT}/server.mjs"
+  local dist="${RELEASE_ROOT}/dist"
+  if [[ ! -f "$server" || ! -d "$dist" ]]; then
+    echo "This release is incomplete. Run mercury-ai-analysis update." >&2
+    exit 1
+  fi
+  if running_pid >/dev/null; then
+    echo "Already running at http://127.0.0.1:${PORT}"
+    exit 0
+  fi
+  mkdir -p "$INSTALL_ROOT"
+  MERCURY_DIST="$dist" MERCURY_ENV_FILE="$ENV_FILE" PORT="$PORT" \
+    node "$server" >>"$LOG_FILE" 2>&1 &
+  echo $! >"$PID_FILE"
+  sleep 0.4
+  if ! running_pid >/dev/null; then
+    echo "Mercury Ai Analysis failed to start. See ${LOG_FILE}" >&2
+    exit 1
+  fi
+  echo "Mercury Ai Analysis is running at http://127.0.0.1:${PORT}"
+}
+
+update() {
+  local was_running=0
+  if running_pid >/dev/null; then
+    was_running=1
+    down
+  fi
+  curl -fsSL "https://github.com/erdncyz/mercury-ai-analysis/releases/latest/download/install.sh" \
+    | MERCURY_UPDATE_ACTIVE=1 bash
+  if [[ "$was_running" -eq 1 ]]; then
+    exec "${INSTALL_ROOT}/current/bin/mercury-ai-analysis" up
+  fi
+}
+
+command_name="${1:-}"
+case "$command_name" in
+  up) up ;;
+  down) down ;;
+  update) update ;;
+  version) version ;;
+  status)
+    if pid="$(running_pid)"; then
+      echo "running ${pid} http://127.0.0.1:${PORT}"
+    else
+      echo "stopped"
+    fi
+    ;;
+  -h|--help|"") usage ;;
+  *)
+    echo "Unknown command: $command_name" >&2
+    usage >&2
+    exit 2
+    ;;
+esac
